@@ -79,7 +79,8 @@ dt{color:var(--fg);font-weight:700;white-space:nowrap} dd{margin:0;color:var(--m
       <dt>J</dt><dd>Schlag, schnell, linear, hoch</dd>
       <dt>K</dt><dd>Tritt, weite Reichweite, linear</dd>
       <dt>L</dt><dd>Haken, langsam, hoch, trifft Sidesteps</dd>
-      <dt>S halten + J / K</dt><dd>Crouch-Jab / Low-Tritt</dd></dl></div>
+      <dt>S halten + J / K</dt><dd>Crouch-Jab / Low-Tritt</dd>
+      <dt>S + D, dann J</dt><dd>Launcher: schleudert den Gegner in die Luft, danach mit J / K nachsetzen (auch aus dem Wavedash)</dd></dl></div>
     <div class="card p2"><h2>Spieler 2 (rechts)</h2><dl>
       <dt>← / →</dt><dd>links / rechts (Blocken = weg vom Gegner)</dd>
       <dt>← → 2×</dt><dd>Dash / Backdash</dd>
@@ -92,9 +93,10 @@ dt{color:var(--fg);font-weight:700;white-space:nowrap} dd{margin:0;color:var(--m
       <dt>, (Komma)</dt><dd>Schlag</dd>
       <dt>. (Punkt)</dt><dd>Tritt</dd>
       <dt>/ (Slash)</dt><dd>Haken</dd>
-      <dt>↓ halten + , / .</dt><dd>Crouch-Jab / Low-Tritt</dd></dl></div>
+      <dt>↓ halten + , / .</dt><dd>Crouch-Jab / Low-Tritt</dd>
+      <dt>↓ + ←, dann ,</dt><dd>Launcher: schleudert den Gegner in die Luft, danach mit , / . nachsetzen (auch aus dem Wavedash)</dd></dl></div>
     <div class="card"><h2>So funktioniert der Sidestep</h2>
-      <p class="note">Schläge und Tritte gehen geradeaus. Wer seitlich aus der Linie tritt, lässt sie ins Leere laufen. Der Haken ist langsamer, deckt aber die Seiten ab und bestraft jeden, der blind ausweicht. Geduckte Spieler lassen hohe Angriffe (Schlag, Haken) über sich weg. Ein Sprung weicht Low-Angriffen aus und auf dem Scheitelpunkt allen Bodenangriffen, dafür bist du beim Absprung und bei der Landung verwundbar. Der Low-Tritt trifft Geduckte trotzdem und lässt sich nur geduckt blocken (ducken und nach hinten halten). Der Crouch-Dash ist geduckt, hohe Angriffe gehen darüber. Wer die nächste Eingabe früh macht, bricht das Dash-Ende ab und gleitet schneller als mit normalen Dashs (Wavedash). Aus dem Crouch-Dash kommen Crouch-Jab und Low-Tritt.</p></div>
+      <p class="note">Schläge und Tritte gehen geradeaus. Wer seitlich aus der Linie tritt, lässt sie ins Leere laufen. Der Haken ist langsamer, deckt aber die Seiten ab und bestraft jeden, der blind ausweicht. Geduckte Spieler lassen hohe Angriffe (Schlag, Haken) über sich weg. Ein Sprung weicht Low-Angriffen aus und auf dem Scheitelpunkt allen Bodenangriffen, dafür bist du beim Absprung und bei der Landung verwundbar. Der Low-Tritt trifft Geduckte trotzdem und lässt sich nur geduckt blocken (ducken und nach hinten halten). Der Crouch-Dash ist geduckt, hohe Angriffe gehen darüber. Wer die nächste Eingabe früh macht, bricht das Dash-Ende ab und gleitet schneller als mit normalen Dashs (Wavedash). Aus dem Crouch-Dash kommen Crouch-Jab und Low-Tritt. Der Launcher ist ein Mid und langsam, geblockt bringt er nichts. Trifft er, kannst du sofort mit Schlag oder Tritt nachsetzen. Jeder Treffer in der Luft macht weniger Schaden, nach dem dritten fällt der Gegner und liegt kurz am Boden.</p></div>
   </div>
 </div>
 
@@ -162,21 +164,25 @@ const MOVES={
   hook:{name:'hook',hgt:'high',su:.25,act:.10,rec:.38,reach:1.3,lat:.85,dmg:9,stun:.38,kb:1.8},
   cjab:{name:'cjab',hgt:'mid',crouch:true,su:.12,act:.07,rec:.22,reach:1.2,lat:.30,dmg:5,stun:.26,kb:1.0},
   sweep:{name:'sweep',hgt:'low',crouch:true,su:.22,act:.10,rec:.38,reach:1.5,lat:.30,dmg:8,stun:.45,kb:2.0},
-  jkick:{name:'jkick',hgt:'mid',su:.05,act:.17,rec:.1,reach:1.45,lat:.35,dmg:9,stun:.4,kb:2.0}
+  jkick:{name:'jkick',hgt:'mid',su:.05,act:.17,rec:.1,reach:1.45,lat:.35,dmg:9,stun:.4,kb:2.0},
+  /* Launcher (runter+vor + Schlag): mid, langsam, schleudert bei Treffer in die Luft */
+  launcher:{name:'launcher',hgt:'mid',launch:true,su:.2,act:.08,rec:.45,reach:1.4,lat:.30,dmg:7,stun:.4,kb:1.0}
 };
 for(const m of Object.values(MOVES))m.dur=m.su+m.act+m.rec;
 
 /* ---------- Kämpfer ---------- */
 function mk(i,col,name){return {i,col,name,x:0,z:0,vel:[0,0],u:[1,0],hp:100,wins:0,state:'idle',t:0,dur:0,move:null,
   hitDone:false,stepDir:0,stepCool:0,walkPhase:0,lvf:0,lvs:0,blocking:false,blockFlash:0,kvx:0,kvz:0,
-  in:{ax:0,dep:0,crouch:false},cr:0,cdashEdge:null,wave:0,y:0,vy:0,jdir:0,airAtk:false,airT:0,jumpEdge:null,edge:null,stepEdge:null,dashEdge:null,seed:i*2,cpu:false,ai:{t:0,ax:0,dep:0}}}
+  in:{ax:0,dep:0,crouch:false},cr:0,juggle:0,cdashEdge:null,wave:0,y:0,vy:0,jdir:0,airAtk:false,airT:0,jumpEdge:null,edge:null,stepEdge:null,dashEdge:null,seed:i*2,cpu:false,ai:{t:0,ax:0,dep:0}}}
 const p1=mk(0,COL1,'SPIELER 1'),p2=mk(1,COL2,'CPU');p2.cpu=true;
-const sparks=[];
+const sparks=[],combo={n:0,i:0,t:-9};
 const R=4.5,LIM=4.0;
 
 function startAttack(f,name){
+  const df=!!(f.edge&&f.edge.df); /* runter+vor war beim Tastendruck gehalten */
   f.edge=null;
-  if(f.in.crouch||f.state==='cdash'){if(name==='hook')return;name=name==='kick'?'sweep':'cjab';}
+  if(df&&name==='punch')name='launcher';
+  else if(f.in.crouch||f.state==='cdash'){if(name==='hook')return;name=name==='kick'?'sweep':'cjab';}
   f.state='attack';f.move=MOVES[name];f.t=0;f.dur=f.move.dur;f.hitDone=false;
 }
 
@@ -187,7 +193,19 @@ function applyHit(f,o,m){
     o.hp-=m.dmg*.12;o.blockFlash=.22;o.x+=f.u[0]*.14;o.z+=f.u[1]*.14;
     sparks.push({p:sp,t:0,life:.2,col:'#ffffff',n:5});
   }else{
-    o.hp-=m.dmg;o.state='hit';o.t=0;o.dur=m.stun;o.kvx=f.u[0]*m.kb*2;o.kvz=f.u[1]*m.kb*2;
+    if(o.state==='air'){
+      /* Juggle: jeder weitere Treffer macht weniger Schaden, ab dem dritten schwebt der Gegner nicht mehr */
+      o.juggle++;o.hp-=m.dmg*Math.max(.4,1-.2*o.juggle);
+      if(o.juggle<=2)o.vy=Math.max(o.vy,3.2);
+      o.kvx=f.u[0]*.9;o.kvz=f.u[1]*.9;o.t=0;
+      combo.n++;combo.i=f.i;combo.t=now();
+    }else if(m.launch){
+      o.hp-=m.dmg;o.state='air';o.t=0;o.y=.001;o.vy=6.2;o.juggle=0;o.kvx=f.u[0]*.6;o.kvz=f.u[1]*.6;
+      f.dur=Math.min(f.dur,f.t+.1); /* kurze Erholung, damit man nachsetzen kann */
+      combo.n=1;combo.i=f.i;combo.t=now();
+    }else{
+      o.hp-=m.dmg;o.state='hit';o.t=0;o.dur=m.stun;o.kvx=f.u[0]*m.kb*2;o.kvz=f.u[1]*m.kb*2;
+    }
     sparks.push({p:sp,t:0,life:.28,col:HITC,n:9});
     if(!REDUCE)cam.shake=Math.min(1,cam.shake+m.dmg/16);
   }
@@ -196,11 +214,12 @@ function applyHit(f,o,m){
 
 /* Trefferprüfung: Reichweite, seitlicher Versatz (Sidestep!) und Höhe (Ducken, Springen) */
 function tryHit(f,o,m){
-  if(f.hitDone||o.state==='ko')return;
+  if(f.hitDone||o.state==='ko'||o.state==='down')return;
   const u=f.u,sd=[-u[1],u[0]],ddx=o.x-f.x,ddz=o.z-f.z;
   const al=ddx*u[0]+ddz*u[1],lat=Math.abs(ddx*sd[0]+ddz*sd[1]);
   const duck=o.cr>.5&&(o.state==='idle'||o.state==='attack'||o.state==='cdash');
-  if(m.name!=='jkick'){if(o.y>.7)return;if(o.y>.25&&m.hgt==='low')return;}
+  if(o.state==='air'){if(m.hgt==='low')return;}
+  else if(m.name!=='jkick'){if(o.y>.7)return;if(o.y>.25&&m.hgt==='low')return;}
   if(m.hgt==='high'&&duck)return;
   if(al>.2&&al<m.reach&&lat<m.lat){f.hitDone=true;applyHit(f,o,m);}
 }
@@ -259,6 +278,13 @@ function updateF(f,o,dt,canAct){
     if(f.cdashEdge&&tn-f.cdashEdge.time<.2&&f.t>.1){f.t=0;f.wave++;f.cdashEdge=null;}
     else if(f.edge&&tn-f.edge.time<.2&&f.t>f.dur*.4)startAttack(f,f.edge.name);
     else if(f.t>=f.dur){f.state='idle';f.wave=0;}
+  }else if(f.state==='air'){
+    /* in die Luft geschleudert (Launcher): schwebt, kann nicht handeln, kann gejuggelt werden */
+    const k=Math.max(0,1-f.t/.7);vx=f.kvx*k;vz=f.kvz*k;
+    f.y+=f.vy*dt;f.vy-=14*dt;
+    if(f.y<=0&&f.vy<0){f.y=0;f.vy=0;f.state='down';f.t=0;f.dur=.85;}
+  }else if(f.state==='down'){
+    if(f.t>=f.dur)f.state='idle';
   }else if(f.state==='jump'){
     vx=u[0]*f.jdir*2.4;vz=u[1]*f.jdir*2.4;
     f.y+=f.vy*dt;f.vy-=14*dt;
@@ -276,7 +302,7 @@ function updateF(f,o,dt,canAct){
   f.vel=[vx,vz];
   const crT=((f.state==='idle'&&canAct&&f.in.crouch)||(f.state==='attack'&&f.move.crouch)||f.state==='cdash')?1:0;
   f.cr+=(crT-f.cr)*Math.min(1,dt*14);
-  if(f.state!=='jump'&&f.y>0){f.vy-=14*dt;f.y+=f.vy*dt;if(f.y<=0){f.y=0;f.vy=0;}} /* Schwerkraft nach Treffer in der Luft */
+  if(f.state!=='jump'&&f.state!=='air'&&f.y>0){f.vy-=14*dt;f.y+=f.vy*dt;if(f.y<=0){f.y=0;f.vy=0;}} /* Schwerkraft nach Treffer in der Luft */
   f.x+=vx*dt;f.z+=vz*dt;
   if(orbit){ /* Umkreisen: Abstand zum Gegner halten */
     const nd=Math.hypot(o.x-f.x,o.z-f.z)||1;
@@ -323,6 +349,7 @@ function pose(f,time){
     if(m.name==='kick'){px+=.1*k;lean-=.22*k;py-=.04*k;rf=lerp3(rf,[px+.92,py+.22-.0,.05],k);}
     if(m.name==='hook'){px+=.2*k2;lean+=.12*k2;}
     if(m.name==='cjab'){px+=.2*k;lean+=.08*k;}
+    if(m.name==='launcher'){px+=.2*k;py-=.1*k;lean+=.06*k;}
     if(m.name==='sweep'){px+=.12*k;lean-=.15*k;rf=lerp3(rf,[px+1.0,.1,.05],k);}
   }
   let hitq=0;
@@ -341,6 +368,7 @@ function pose(f,time){
   if(st==='attack'){
     if(m.name==='punch')rh=lerp3(rh,[chest[0]+.82,chest[1],.02],k);
     if(m.name==='cjab')rh=lerp3(rh,[chest[0]+.75,chest[1]-.02,.02],k);
+    if(m.name==='launcher')rh=lerp3(rh,[chest[0]+.55,chest[1]+.5,.02],k);
     if(m.name==='kick'||m.name==='sweep'){lh=add(chest,[.2,.12,-.3]);}
     if(m.name==='hook'){
       const q=t<m.su?.5*t/m.su:.5+.5*clamp((t-m.su)/m.act,0,1),th=-1.2+2.4*q;
@@ -356,8 +384,12 @@ function pose(f,time){
   const kl=ik(lhip,lf,.5,.5,[1,0,0]),kr=ik(rhip,rf,.5,.5,[1,0,0]);
   const J={head,neck,chest,pelvis,lsh,rsh,lhip,rhip,lel:el.mid,lh:el.end,rel:er.mid,rh:er.end,
     lkn:kl.mid,lft:kl.end,rkn:kr.mid,rft:kr.end,ltoe:add(kl.end,[.14,0,0]),rtoe:add(kr.end,[.14,0,0])};
-  if(st==='ko'){
-    const q=ease(t/f.dur),phi=q*1.45,c=Math.cos(phi),sn=Math.sin(phi),drop=(.93-.12)*q;
+  if(st==='ko'||st==='down'||st==='air'){
+    let q,drop=0;
+    if(st==='ko'){q=ease(t/f.dur);drop=(.93-.12)*q;}
+    else if(st==='down'){q=ease(Math.min(1,t/.2))*ease(Math.min(1,(f.dur-t)/.25));drop=(.93-.12)*q;}
+    else q=.62; /* Luft: nach hinten gekippt, ohne Absenken */
+    const phi=q*1.45,c=Math.cos(phi),sn=Math.sin(phi);
     for(const key in J){const r=sub(J[key],pelvis);
       J[key]=[pelvis[0]+r[0]*c-r[1]*sn-.0,Math.max(.02,pelvis[1]-drop+r[0]*sn+r[1]*c),pelvis[2]+r[2]];}
   }
@@ -454,6 +486,7 @@ function drawHUD(){
   };
   bar(p1,true);bar(p2,false);
   text(String(Math.max(0,Math.ceil(game.timer))),W/2,y+bh/2,fs*1.7,'#e8edf7');
+  if(combo.n>=2&&now()-combo.t<1.6)text(combo.n+' HIT COMBO',combo.i?W-m-bw/2:m+bw/2,y+bh+fs*2.6,fs*1.2,combo.i?COL2:COL1);
   const big=Math.max(26,H*.1);
   if(game.state==='title'){
     text('STRICHKAMPF 3D',W/2,H*.3,big,'#e8edf7');
@@ -541,7 +574,10 @@ function pressRaw(pi,act,down){
       circleDown[pi]=false;
     }
     held[pi].down=down?1:0;
-  }else if(down)f.edge={name:act,time:tn};
+  }else if(down){
+    const fk=pi===0?'right':'left',bk=pi===0?'left':'right';
+    f.edge={name:act,time:tn,df:!!(held[pi].down&&held[pi][fk]&&!held[pi][bk])};
+  }
 }
 function startPressed(){if(game.state==='title'||game.state==='matchEnd')startMatch();}
 addEventListener('keydown',e=>{
@@ -572,12 +608,14 @@ function ai(f,o,dt){
   if(A.t<=0){
     A.t=.14+Math.random()*.22;A.ax=0;A.dep=0;A.crouch=false;const r=Math.random(),tn=now();
     const sidestep=()=>{f.stepEdge={dir:Math.random()<.5?1:-1,time:tn};};
-    if(o.state==='attack'&&o.t<o.move.su+.02&&dist<2.1){
+    if(o.state==='air'&&dist<2){
+      f.edge={name:Math.random()<.6?'punch':'kick',time:tn};A.t=.1; /* in der Luft nachsetzen */
+    }else if(o.state==='attack'&&o.t<o.move.su+.02&&dist<2.1){
       if(r<.3)sidestep();else if(r<.5)f.dashEdge={axis:-ts,time:tn};else if(r<.75){A.ax=-ts;A.t=.35;}
     }else if(dist>1.75){
       A.ax=ts;if(r<.18)sidestep();else if(r<.3)A.dep=1;else if(r<.4&&dist>2.4)f.dashEdge={axis:ts,time:tn};else if(r<.47&&dist>2)f.jumpEdge={time:tn,ax:ts};else if(r<.55&&dist>1.9)f.cdashEdge={time:tn};
     }else{
-      if(r<.3)f.edge={name:'punch',time:tn};else if(r<.5)f.edge={name:'kick',time:tn};
+      if(r<.3)f.edge={name:'punch',time:tn,df:Math.random()<.35};else if(r<.5)f.edge={name:'kick',time:tn};
       else if(r<.65)f.edge={name:'hook',time:tn};else if(r<.78)sidestep();
       else if(r<.86){A.crouch=true;A.t=.3;f.in.crouch=true;f.edge={name:'kick',time:tn};}
       else if(r<.93)f.dashEdge={axis:-ts,time:tn};
